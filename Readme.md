@@ -71,6 +71,7 @@
   Your notebook should use the provided python time-series API, which ensures that models do not peek forward in time. To use the API, follow the instructions and template in Code Competition Detailed API instructions and Basic Submission Template.
 
 Useful links:
+* Applying Deep Neural Networks to Financial Time Series Forecasting http://infosci.cornell.edu/~koenecke/files/Deep_Learning_for_Time_Series_Tutorial.pdf
 * Tutorial to the G-Research Crypto Competition
 https://www.kaggle.com/cstein06/tutorial-to-the-g-research-crypto-competition#Crypto-forecasting-tutorial
 * G-Research Crypto Forecasting EDA
