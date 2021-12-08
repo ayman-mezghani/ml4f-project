@@ -99,4 +99,3 @@ Dogecoin we have fewer data starting from later in 2018 or even later in 2019 in
 * Hyper-parameter tune https://www.kaggle.com/junjitakeshima/crypto-beginner-s-try-for-simple-lgbm-en-jp
 * Complex models: https://www.kaggle.com/yamqwe/time-series-modeling-n-beats
 * Datart https://www.kaggle.com/cecileguillot/naive-drift-and-regression-approaches
-
