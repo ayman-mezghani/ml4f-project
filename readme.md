@@ -1,6 +1,10 @@
 # G-Research Crypto Forecasting
+
 Ekaterina Kryukova, Ayman Mezghani
 
+### Competition Details
+* [Link](https://www.kaggle.com/c/g-research-crypto-forecasting)
+* [Data](https://www.kaggle.com/c/g-research-crypto-forecasting/data)
 
 ### Market
 
@@ -15,18 +19,18 @@ Dogecoin we have fewer data starting from later in 2018 or even later in 2019 in
 
 ### Data features description
 
-* timestamp: All timestamps are returned as second Unix timestamps (the number of seconds elapsed since 1970-01-01 00:
+* **timestamp**: All timestamps are returned as second Unix timestamps (the number of seconds elapsed since 1970-01-01 00:
   00:00.000 UTC). Timestamps in this dataset are multiple of 60, indicating minute-by-minute data.
-* Asset_ID
-* Count: Total number of trades in the time interval (last minute).
-* Open: Opening price of the time interval (in USD).
-* High: Highest price reached during time interval (in USD).
-* Low: Lowest price reached during time interval (in USD).
-* Close: Closing price of the time interval (in USD).
-* Volume: Quantity of asset bought or sold, displayed in base currency USD.
-* VWAP: The average price of the asset over the time interval, weighted by volume. VWAP is an aggregated form of trade
+* **Asset_ID**
+* **Count**: Total number of trades in the time interval (last minute).
+* **Open**: Opening price of the time interval (in USD).
+* **High**: Highest price reached during time interval (in USD).
+* **Low**: Lowest price reached during time interval (in USD).
+* **Close**: Closing price of the time interval (in USD).
+* **Volume**: Quantity of asset bought or sold, displayed in base currency USD.
+* **VWAP**: The average price of the asset over the time interval, weighted by volume. VWAP is an aggregated form of trade
   data.
-* Target: Residual log-returns for the asset over a 15-minute horizon. Predicting returns in the near future for prices
+* **Target**: Residual log-returns for the asset over a 15-minute horizon. Predicting returns in the near future for prices
   $P^a$, for each asset $a$. $$R^a(t) = log (P^a(t+16)\ /\ P^a(t+1))$$
 
 ### EDA
