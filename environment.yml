@@ -1,0 +1,19 @@
+name: ml4f_project_kk_am
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.8
+  - numpy
+  - pandas
+  - jupyterlab
+  - scikit-learn
+  - statsmodels
+  - seaborn
+  - pip
+  - pip:
+    - tensorflow==2.6
+    - tensorflow-probability==0.14
+    - keras==2.6
+    - plotly
+ 
