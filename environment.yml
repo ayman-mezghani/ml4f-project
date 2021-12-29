@@ -15,5 +15,6 @@ dependencies:
     - tensorflow==2.6
     - tensorflow-probability==0.14
     - keras==2.6
+    - keras-tcn
     - plotly
  
