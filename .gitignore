@@ -1,6 +1,6 @@
 .idea/
 data/*
-
+g-research-crypto-forecasting/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
