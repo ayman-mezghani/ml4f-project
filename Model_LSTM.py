@@ -103,19 +103,120 @@ def plot_training_history(history):
     fig.show()
     gc.collect()
 
-def prediction_details(predictions, y_test, asset_details, assets=range(N_ASSETS =Constants.N_ASSETS)):
+def prediction_details(predictions, y_test, asset_details, model_name,assets=range(Constants.N_ASSETS)):
     print('Asset:    Corr. coef.')
     print('---------------------')
+    perf_df = pd.DataFrame(columns=['Model', 'asset', 'corr',
+                                    'weights'])  # A FUNCTION THAT LOGS MODEL NAME, RMSE AND RMPSE INTO perf_df
     for i in assets:
         # drop first 14 values in the y_test, since they are absent in val_generator labels
-        y_true = np.squeeze(y_test[WINDOW_SIZE - 1:, i])
+        y_true = np.squeeze(y_test[Constants.WINDOW_SIZE - 1:, i])
         y_pred = np.squeeze(predictions[:, i])
         real_target_ind = np.argwhere(y_true != 0)
         asset_name = asset_details[asset_details.Asset_ID == i]['Asset_Name'].item()
         print(f"{asset_name}: {np.corrcoef(y_pred[real_target_ind].flatten(), y_true[real_target_ind].flatten())[0, 1]:.4f}")
+        correl = np.corrcoef(y_pred[real_target_ind].flatten(), y_true[real_target_ind].flatten())[0, 1]
+        weights = asset_details[asset_details.Asset_ID == i]['Weight'].item()
+
+        perf_df = perf_df.append([pd.Series([model_name, asset_name, correl, weights], index=perf_df.columns)],
+                                 ignore_index=True)
+
         plt.plot(y_true, label='Target')
         plt.plot(y_pred, label='Prediction')
         plt.xlabel('Time')
         plt.ylabel('Target')
         plt.legend()
         plt.show()
+    return perf_df
+
+
+# Model
+def get_model_Bidirectional_2_layer(X_train, y_train,n_assets=Constants.N_ASSETS):
+    train_generator = sample_generator(X_train, y_train, length=Constants.WINDOW_SIZE, batch_size = Constants.BATCH_SIZE)
+
+    x_input = keras.Input(shape=(train_generator[0][0].shape[1], n_assets, train_generator[0][0].shape[-1]))
+    branch_outputs = []
+
+    for i in range(n_assets):
+        a = layers.Lambda(lambda x: x[:, :, i])(x_input)  # Slicing the ith asset:
+        a = layers.Masking(mask_value=0.)(a)
+        a = layers.Bidirectional(layers.LSTM(32, return_sequences=True))(a)
+        a = layers.Bidirectional(layers.LSTM(16))(a)
+        # a = layers.GlobalAvgPool1D()(a)
+        branch_outputs.append(a)
+
+    x = layers.Concatenate()(branch_outputs)
+    x = layers.Dense(units=128)(x)
+    out = layers.Dense(units=n_assets)(x)
+    model = keras.Model(inputs=x_input, outputs=out)
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss=masked_mse, metrics=[Correlation])
+    return model
+
+#read architectures for such models
+
+#bidirectional try as girl did
+#try feature
+#finish arima
+
+
+#2lstm https://www.kaggle.com/ekaterinakryukova/g-research-parallel-lstm-training/edit
+def get_model_2lstm(X_train, y_train,n_assets=Constants.N_ASSETS):
+    train_generator = sample_generator(X_train, y_train, length=Constants.WINDOW_SIZE, batch_size=Constants.BATCH_SIZE)
+    x_input = keras.Input(shape=(train_generator[0][0].shape[1], n_assets, train_generator[0][0].shape[-1]))
+
+    branch_outputs = []
+
+    for i in range(n_assets):
+        # Slicing the ith asset:
+        a = layers.Lambda(lambda x: x[:, :, i])(x_input)
+        a = layers.Masking(mask_value=0., )(a)
+        # a = layers.BatchNormalization()(a)
+        a = layers.LSTM(units=32, return_sequences=True)(a)
+        a = layers.LSTM(units=16)(a)
+        branch_outputs.append(a)
+
+    x = layers.Concatenate()(branch_outputs)
+    x = layers.Dense(units=128)(x)
+    out = layers.Dense(units=n_assets)(x)
+
+    model = keras.Model(inputs=x_input, outputs=out)
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+                  # loss = 'mse',
+                  # loss = 'cosine_similarity',
+                  loss=masked_cosine,
+                  metrics=[Correlation]
+                  )
+
+    return model
+
+
+def get_model_next(X_train, y_train,n_assets=Constants.N_ASSETS):
+    train_generator = sample_generator(X_train, y_train, length=Constants.WINDOW_SIZE, batch_size=Constants.BATCH_SIZE)
+    x_input = keras.Input(shape=(train_generator[0][0].shape[1], n_assets, train_generator[0][0].shape[-1]))
+
+    branch_outputs = []
+
+    for i in range(n_assets):
+        # Slicing the ith asset:
+        a = layers.Lambda(lambda x: x[:, :, i])(x_input)
+        a = layers.Masking(mask_value=0., )(a)
+        y = layers.Conv1D(
+            32, 3, activation='relu', input_shape=input_shape[1:])(x)
+        # a = layers.BatchNormalization()(a)
+        a = layers.LSTM(units=32, return_sequences=True)(a)
+        a = layers.LSTM(units=16)(a)
+        branch_outputs.append(a)
+
+    x = layers.Concatenate()(branch_outputs)
+    x = layers.Dense(units=128)(x)
+    out = layers.Dense(units=n_assets)(x)
+
+    model = keras.Model(inputs=x_input, outputs=out)
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+                  # loss = 'mse',
+                  # loss = 'cosine_similarity',
+                  loss=masked_cosine,
+                  metrics=[Correlation]
+                  )
+
+    return model
