@@ -18,7 +18,7 @@ def add_features(df, row=False):
     _df['Lower_Shadow'] = np.minimum(_df['Close'], _df['Open']) - _df['Low']
     _df['spread'] = _df['High'] - _df['Low']
     _df['mean_trade'] = _df['Volume'] / _df['Count']
-    _df['log_price_change'] = np.log(_df['Close'] / _df['Open'])
+    #_df['log_price_change'] = np.log(_df['Close'] / _df['Open'])
 
 
     return _df
@@ -34,6 +34,8 @@ def process_all_assets(train):
         train[['Count', 'Open', 'High', 'Low', 'Close', 'Volume', 'VWAP', 'Target']].astype(np.float32)
     train['Target'] = train['Target'].fillna(0)
 
+
+    # VWAP column has -inf and inf values. VWAP_max and VWAP_min will be used for replacement
     VWAP_max = np.max(train[np.isfinite(train.VWAP)].VWAP)
     VWAP_min = np.min(train[np.isfinite(train.VWAP)].VWAP)
     train['VWAP'] = np.nan_to_num(train.VWAP, posinf=VWAP_max, neginf=VWAP_min)
@@ -53,7 +55,6 @@ def process_all_assets(train):
 
 
 
-
     #add feat
 
     train = add_features(train)
@@ -62,6 +63,9 @@ def process_all_assets(train):
     scale_features = train.columns.drop(['Asset_ID', 'Target'])
     RS = RobustScaler()
     train[scale_features] = RS.fit_transform(train[scale_features])
+    #minmax = MinMaxScaler()
+    #train[scale_features] = minmax.fit_transform(train[scale_features])
+
 
     ind = train.index.unique()
     #fill gaps

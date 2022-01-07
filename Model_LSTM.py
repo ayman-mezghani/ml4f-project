@@ -36,7 +36,11 @@ class sample_generator(keras.utils.Sequence):
 
 #Correlations for predicted and real
 def MaxCorrelation(y_true,y_pred):
-    return -tf.math.abs(tfp.stats.correlation(y_pred, y_true, sample_axis=None, event_axis=None))
+    """Goal is to maximize correlation between y_pred, y_true. Same as minimizing the negative."""
+    mask = tf.math.not_equal(y_true, 0.)
+    y_true_masked = tf.boolean_mask(y_true, mask)
+    y_pred_masked = tf.boolean_mask(y_pred, mask)
+    return -tf.math.abs(tfp.stats.correlation(y_true_masked,y_pred_masked, sample_axis=None, event_axis=None))
 
 def Correlation(y_true,y_pred):
     return tf.math.abs(tfp.stats.correlation(y_pred, y_true, sample_axis=None, event_axis=None))
@@ -113,7 +117,13 @@ def prediction_details(predictions, y_test, asset_details, model_name,assets=ran
         y_true = np.squeeze(y_test[Constants.WINDOW_SIZE - 1:, i])
         y_pred = np.squeeze(predictions[:, i])
         real_target_ind = np.argwhere(y_true != 0)
-        asset_name = asset_details[asset_details.Asset_ID == i]['Asset_Name'].item()
+
+        #??
+        assets_order = pd.read_csv('g-research-crypto-forecasting/supplemental_train.csv').Asset_ID[:14]
+        assets_order = dict((t, i) for i, t in enumerate(assets_order))
+        asset_id = list(assets_order.keys())[i]
+
+        asset_name = asset_details[asset_details.Asset_ID == asset_id]['Asset_Name'].item()
         print(f"{asset_name}: {np.corrcoef(y_pred[real_target_ind].flatten(), y_true[real_target_ind].flatten())[0, 1]:.4f}")
         correl = np.corrcoef(y_pred[real_target_ind].flatten(), y_true[real_target_ind].flatten())[0, 1]
         weights = asset_details[asset_details.Asset_ID == i]['Weight'].item()
@@ -188,6 +198,39 @@ def get_model_2lstm(X_train, y_train,n_assets=Constants.N_ASSETS):
                   )
 
     return model
+
+def get_model_4(X_train, y_train,n_assets=Constants.N_ASSETS):
+    train_generator = sample_generator(X_train, y_train, length=Constants.WINDOW_SIZE, batch_size=Constants.BATCH_SIZE)
+    x_input = keras.Input(shape=(train_generator[0][0].shape[1], n_assets, train_generator[0][0].shape[-1]))
+
+    branch_outputs = []
+
+
+    for i in range(n_assets):
+        # Slicing the ith asset:
+        a = layers.Lambda(lambda x: x[:, :, i])(x_input)
+        a = layers.Masking(mask_value=0., )(a)
+        # a = layers.BatchNormalization()(a)
+        a = layers.LSTM(units=50, return_sequences=True)(a)
+        a = layers.Dropout(0.2)(a)
+
+        branch_outputs.append(a)
+
+    x = layers.Concatenate()(branch_outputs)
+    x = layers.Dense(units=128)(x)
+    out = layers.Dense(units=n_assets)(x)
+    #a = layers.LeakyReLU()(a)
+    model = keras.Model(inputs=x_input, outputs=out)
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+                  # loss = 'mse',
+                  # loss = 'cosine_similarity',
+                  loss=masked_cosine,
+                  metrics=[Correlation]
+                  )
+
+    return model
+
+
 
 
 def get_model_next(X_train, y_train,n_assets=Constants.N_ASSETS):
