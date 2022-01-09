@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import gc
-from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import RobustScaler, MinMaxScaler
 
 def c_time_sub(asset_id, data):
     df=data[data["Asset_ID"]==asset_id].set_index("timestamp")
@@ -25,7 +25,7 @@ def add_features(df, row=False):
 
 
 
-def process_all_assets(train):
+def process_all_assets(train,scaler = RobustScaler()):
     # for assets sorting
     assets_order = pd.read_csv('g-research-crypto-forecasting/supplemental_train.csv').Asset_ID[:14]
     assets_order = dict((t, i) for i, t in enumerate(assets_order))
@@ -33,6 +33,7 @@ def process_all_assets(train):
     train[['Count', 'Open', 'High', 'Low', 'Close', 'Volume', 'VWAP', 'Target']] = \
         train[['Count', 'Open', 'High', 'Low', 'Close', 'Volume', 'VWAP', 'Target']].astype(np.float32)
     train['Target'] = train['Target'].fillna(0)
+    #fill all the data with zero
 
 
     # VWAP column has -inf and inf values. VWAP_max and VWAP_min will be used for replacement
@@ -61,8 +62,8 @@ def process_all_assets(train):
 
     #scale
     scale_features = train.columns.drop(['Asset_ID', 'Target'])
-    RS = RobustScaler()
-    train[scale_features] = RS.fit_transform(train[scale_features])
+    #RS = RobustScaler()
+    train[scale_features] = scaler.fit_transform(train[scale_features])
     #minmax = MinMaxScaler()
     #train[scale_features] = minmax.fit_transform(train[scale_features])
 

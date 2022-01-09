@@ -10,6 +10,8 @@ import tensorflow_probability as tfp
 from sklearn.preprocessing import RobustScaler
 from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 #import gresearch_crypto
+from keras import regularizers
+from keras.layers import LSTM, LeakyReLU
 import gc
 
 import Constants
@@ -65,25 +67,7 @@ def masked_cosine(y_true, y_pred):
     return tf.keras.losses.cosine_similarity(y_true_masked, y_pred_masked)
 
 
-# Model
-def get_modell(X_train, y_train,n_assets=Constants.N_ASSETS):
-    train_generator = sample_generator(X_train, y_train, length=Constants.WINDOW_SIZE, batch_size = Constants.BATCH_SIZE)
-    x_input = keras.Input(shape=(train_generator[0][0].shape[1], n_assets, train_generator[0][0].shape[-1]))
-    branch_outputs = []
 
-    for i in range(n_assets):
-        a = layers.Lambda(lambda x: x[:, :, i])(x_input)  # Slicing the ith asset:
-        a = layers.Masking(mask_value=0.)(a)
-        a = layers.LSTM(units=32, return_sequences=True)(a)
-        a = layers.GlobalAvgPool1D()(a)
-        branch_outputs.append(a)
-
-    x = layers.Concatenate()(branch_outputs)
-    x = layers.Dense(units=128)(x)
-    out = layers.Dense(units=n_assets)(x)
-    model = keras.Model(inputs=x_input, outputs=out)
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss=masked_mse, metrics=[Correlation])
-    return model
 
 
 def plot_training_history(history):
@@ -139,8 +123,27 @@ def prediction_details(predictions, y_test, asset_details, model_name,assets=ran
         plt.show()
     return perf_df
 
+# Model 1
+def get_modell(X_train, y_train,n_assets=Constants.N_ASSETS):
+    train_generator = sample_generator(X_train, y_train, length=Constants.WINDOW_SIZE, batch_size = Constants.BATCH_SIZE)
+    x_input = keras.Input(shape=(train_generator[0][0].shape[1], n_assets, train_generator[0][0].shape[-1]))
+    branch_outputs = []
 
-# Model
+    for i in range(n_assets):
+        a = layers.Lambda(lambda x: x[:, :, i])(x_input)  # Slicing the ith asset:
+        a = layers.Masking(mask_value=0.)(a)
+        a = layers.LSTM(units=32, return_sequences=True)(a)
+        a = layers.GlobalAvgPool1D()(a)
+        branch_outputs.append(a)
+
+    x = layers.Concatenate()(branch_outputs)
+    x = layers.Dense(units=128)(x)
+    out = layers.Dense(units=n_assets)(x)
+    model = keras.Model(inputs=x_input, outputs=out)
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss=masked_mse, metrics=[Correlation])
+    return model
+
+# Model 2
 def get_model_Bidirectional_2_layer(X_train, y_train,n_assets=Constants.N_ASSETS):
     train_generator = sample_generator(X_train, y_train, length=Constants.WINDOW_SIZE, batch_size = Constants.BATCH_SIZE)
 
@@ -253,6 +256,38 @@ def get_model_next(X_train, y_train,n_assets=Constants.N_ASSETS):
     x = layers.Concatenate()(branch_outputs)
     x = layers.Dense(units=128)(x)
     out = layers.Dense(units=n_assets)(x)
+
+    model = keras.Model(inputs=x_input, outputs=out)
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+                  # loss = 'mse',
+                  # loss = 'cosine_similarity',
+                  loss=masked_cosine,
+                  metrics=[Correlation]
+                  )
+
+    return model
+
+def get_model_6(X_train, y_train,n_assets=Constants.N_ASSETS):
+    train_generator = sample_generator(X_train, y_train, length=Constants.WINDOW_SIZE, batch_size=Constants.BATCH_SIZE)
+    x_input = keras.Input(shape=(train_generator[0][0].shape[1], n_assets, train_generator[0][0].shape[-1]))
+
+    branch_outputs = []
+
+    for i in range(n_assets):
+        # Slicing the ith asset:
+        a = layers.Lambda(lambda x: x[:, :, i])(x_input)
+        a = layers.Masking(mask_value=0., )(a)
+        # a = layers.BatchNormalization()(a)
+        a = layers.LSTM(units=32, return_sequences=True, dropout=0.2)(a)
+        a = layers.LSTM(units=32, return_sequences=True, dropout=0.2)(a)
+        a = layers.LSTM(units=32, dropout=0.2)(a)
+
+        branch_outputs.append(a)
+
+    x = layers.Concatenate()(branch_outputs)
+    x = layers.Dense(units=128)(x)
+    out = layers.Dense(units=n_assets)(x)
+
 
     model = keras.Model(inputs=x_input, outputs=out)
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
