@@ -3,9 +3,7 @@ import gc
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import RobustScaler
-
-
-# import pandas_ta as ta  # to be used for more feature engineering
+import pandas_ta as ta # to be used for more feature engineering
 
 
 def c_time_sub(asset_id, data):
@@ -26,6 +24,15 @@ def add_features(_df):
     _df['log_Close/Open'] = np.log(_df['Close/Open'])
 
     _df['mean_trade'] = _df['Volume'] / (_df['Count'] + 1)
+    
+    _df.ta.macd(close='close', append=True)
+
+    _df.ta.coppock(close='close', append=True)
+
+    _df.ta.stochrsi(close='close', append=True)
+
+    _df.ta.dpo(close='close', append=True)
+    
     return _df
 
 
@@ -39,7 +46,7 @@ def add_more_features(_df):
     _df['LOGVOL'] = np.log(1. + _df['Volume'])
     _df['LOGCNT'] = np.log(1. + _df['Count'])
 
-    _df['Mean'] = _df[['Open', 'High', 'Low', 'Close']].mean(axis=1)
+    _df['Mean'] = _df[['Open', 'High', 'Low', 'Close']].mean(axis = 1)
     _df['High/Mean'] = _df['High'] / _df['Mean']
     _df['Low/Mean'] = _df['Low'] / _df['Mean']
 
@@ -99,7 +106,6 @@ def process_all_assets(_df, scaler=RobustScaler(), more_feat=False):
 
     # reindexing, frequency is minutes
     ind = df.index.unique()
-
     def reindex(df):
         res = df.reindex(pd.date_range(ind.min(), ind.max(), freq='min'))
         res['is_real'].fillna(False, inplace=True)
