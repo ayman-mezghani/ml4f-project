@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import gc
 from sklearn.preprocessing import RobustScaler, MinMaxScaler
+import pandas_ta as ta
+
 
 def c_time_sub(asset_id, data):
     df=data[data["Asset_ID"]==asset_id].set_index("timestamp")
@@ -22,10 +24,29 @@ def add_features(df, row=False):
 
 
     return _df
+def add_more_features(df, row=False):
+    df_feat = df.copy()
+
+    df_feat['log_price_change'] = np.log(df_feat['Close'] / df_feat['Open'])
+    #bd = _df.ta.macd(close='close', fast=12, slow=26, signal=9)
+    #_df = pd.concat([_df, bd], axis=1).dropna()
+    df_feat["high_div_low"] = df_feat["High"] / df_feat["Low"]
+    df_feat['trade'] = df_feat['Close'] - df_feat['Open']
+    df_feat['gtrade'] = df_feat['trade'] / df_feat['Count']
+    df_feat['shadow1'] = df_feat['trade'] / df_feat['Volume']
+    df_feat['shadow3'] = df_feat['Upper_Shadow'] / df_feat['Volume']
+    df_feat['shadow5'] = df_feat['Lower_Shadow'] / df_feat['Volume']
+    df_feat['diff1'] = df_feat['Volume'] - df_feat['Count']
+    df_feat['mean1'] = (df_feat['shadow5'] + df_feat['shadow3']) / 2
+    df_feat['mean2'] = (df_feat['shadow1'] + df_feat['Volume']) / 2
+    df_feat['mean3'] = (df_feat['trade'] + df_feat['gtrade']) / 2
+    df_feat['mean4'] = (df_feat['diff1'] + df_feat['Upper_Shadow']) / 2
+    df_feat['mean5'] = (df_feat['diff1'] + df_feat['Lower_Shadow']) / 2
+    df_feat.replace([np.inf, -np.inf], np.nan, inplace=True)
+    return df_feat
 
 
-
-def process_all_assets(train,scaler = RobustScaler()):
+def process_all_assets(train,scaler = RobustScaler(), more_feat=False):
     # for assets sorting
     assets_order = pd.read_csv('g-research-crypto-forecasting/supplemental_train.csv').Asset_ID[:14]
     assets_order = dict((t, i) for i, t in enumerate(assets_order))
@@ -34,7 +55,6 @@ def process_all_assets(train,scaler = RobustScaler()):
         train[['Count', 'Open', 'High', 'Low', 'Close', 'Volume', 'VWAP', 'Target']].astype(np.float32)
     train['Target'] = train['Target'].fillna(0)
     #fill all the data with zero
-
 
     # VWAP column has -inf and inf values. VWAP_max and VWAP_min will be used for replacement
     VWAP_max = np.max(train[np.isfinite(train.VWAP)].VWAP)
@@ -57,8 +77,12 @@ def process_all_assets(train,scaler = RobustScaler()):
 
 
     #add feat
+    train.replace([np.inf, -np.inf], np.nan, inplace=True)
 
     train = add_features(train)
+    if more_feat==True:
+        train = add_more_features(train)
+
 
     #scale
     scale_features = train.columns.drop(['Asset_ID', 'Target'])
