@@ -17,4 +17,5 @@ dependencies:
     - keras==2.6
     - keras-tcn
     - plotly
+    - pandas_ta
  
