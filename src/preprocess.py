@@ -117,7 +117,7 @@ def process_all_assets(_df, scaler=RobustScaler(), more_feat=False):
     gc.collect()
 
     # Feature values for 'non-real' rows are set to zeros
-    for col in feature_cols:
-        df[col] = df[col] * df.is_real
+    """for col in feature_cols:
+        df[col] = df[col] * df.is_real"""
 
     return df

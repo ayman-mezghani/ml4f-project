@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
-import numpy as np  # linear algebra
-import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
+import numpy as np
+import pandas as pd
 import tensorflow as tf
 import tensorflow_probability as tfp
 from tcn import TCN
@@ -8,17 +8,19 @@ from tensorflow import keras
 from tensorflow.keras import layers
 
 
-# Correlations for predicted and real
+def Correlation(y_true, y_pred):
+    return tf.math.abs(tfp.stats.correlation(y_pred, y_true, sample_axis=None, event_axis=None))
+
+
+# These are actually wrong, they're using the target to see if it's 0 !!
+
+"""# Correlations for predicted and real
 def MaxCorrelation(y_true, y_pred):
-    """Goal is to maximize correlation between y_pred, y_true. Same as minimizing the negative."""
+    #Goal is to maximize correlation between y_pred, y_true. Same as minimizing the negative.
     mask = tf.math.not_equal(y_true, 0.)
     y_true_masked = tf.boolean_mask(y_true, mask)
     y_pred_masked = tf.boolean_mask(y_pred, mask)
     return -tf.math.abs(tfp.stats.correlation(y_true_masked, y_pred_masked, sample_axis=None, event_axis=None))
-
-
-def Correlation(y_true, y_pred):
-    return tf.math.abs(tfp.stats.correlation(y_pred, y_true, sample_axis=None, event_axis=None))
 
 
 # Masked losses
@@ -41,7 +43,7 @@ def masked_cosine(y_true, y_pred):
     y_true_masked = tf.boolean_mask(y_true, mask)
     y_pred_masked = tf.boolean_mask(y_pred, mask)
     return tf.keras.losses.cosine_similarity(y_true_masked, y_pred_masked)
-
+"""
 
 def plot_training_history(history):
     fig, ax = plt.subplots(1, 2, figsize=(16, 8))
@@ -134,7 +136,8 @@ def get_model_LSTM(train_generator, n_assets):
 
     for i in range(n_assets):
         a = layers.Lambda(lambda x: x[:, :, i])(x_input)  # Slicing the ith asset:
-        a = layers.Masking(mask_value=0.)(a)
+        #a = layers.Masking(mask_value=0.)(a)
+        #a = layers.BatchNormalization()(a)
         a = layers.LSTM(units=32, return_sequences=True)(a)
         a = layers.GlobalAvgPool1D()(a)
         branch_outputs.append(a)
@@ -143,7 +146,7 @@ def get_model_LSTM(train_generator, n_assets):
     x = layers.Dense(units=128)(x)
     out = layers.Dense(units=n_assets)(x)
     model = keras.Model(inputs=x_input, outputs=out, name='LSTM')
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss=masked_mse, metrics=[Correlation])
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss='mse', metrics=[Correlation])
     return model
 
 
@@ -154,7 +157,8 @@ def get_model_Bidirectional_2_layer_LSTM(train_generator, n_assets):
 
     for i in range(n_assets):
         a = layers.Lambda(lambda x: x[:, :, i])(x_input)  # Slicing the ith asset:
-        a = layers.Masking(mask_value=0.)(a)
+        #a = layers.Masking(mask_value=0.)(a)
+        #a = layers.BatchNormalization()(a)
         a = layers.Bidirectional(layers.LSTM(32, return_sequences=True))(a)
         a = layers.Bidirectional(layers.LSTM(16))(a)
         # a = layers.GlobalAvgPool1D()(a)
@@ -164,7 +168,7 @@ def get_model_Bidirectional_2_layer_LSTM(train_generator, n_assets):
     x = layers.Dense(units=128)(x)
     out = layers.Dense(units=n_assets)(x)
     model = keras.Model(inputs=x_input, outputs=out, name='Bidirectional_2_layer_LSTM')
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss=masked_mse, metrics=[Correlation])
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss='mse', metrics=[Correlation])
     return model
 
 
@@ -176,7 +180,8 @@ def get_model_Double_LSTM(train_generator, n_assets):
     for i in range(n_assets):
         # Slicing the ith asset:
         a = layers.Lambda(lambda x_: x_[:, :, i])(x_input)
-        a = layers.Masking(mask_value=0., )(a)
+        #a = layers.Masking(mask_value=0., )(a)
+        #a = layers.BatchNormalization()(a)
         a = layers.LSTM(units=32, return_sequences=True)(a)
         a = layers.LSTM(units=16)(a)
         branch_outputs.append(a)
@@ -186,7 +191,7 @@ def get_model_Double_LSTM(train_generator, n_assets):
     out = layers.Dense(units=n_assets)(x)
 
     model = keras.Model(inputs=x_input, outputs=out, name='Double_LSTM')
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss=masked_cosine, metrics=[Correlation])
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss='mse', metrics=[Correlation])
 
     return model
 
@@ -198,7 +203,8 @@ def get_model_LSTM_dropout(train_generator, n_assets):
     for i in range(n_assets):
         # Slicing the ith asset:
         a = layers.Lambda(lambda x: x[:, :, i])(x_input)
-        a = layers.Masking(mask_value=0., )(a)
+        #a = layers.Masking(mask_value=0., )(a)
+        #a = layers.BatchNormalization()(a)
         a = layers.LSTM(units=50, return_sequences=True)(a)
         a = layers.Dropout(0.2)(a)
 
@@ -207,9 +213,8 @@ def get_model_LSTM_dropout(train_generator, n_assets):
     x = layers.Concatenate()(branch_outputs)
     x = layers.Dense(units=128)(x)
     out = layers.Dense(units=n_assets)(x)
-    # a = layers.LeakyReLU()(a)
     model = keras.Model(inputs=x_input, outputs=out, name='LSTM_dropout')
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss=masked_cosine, metrics=[Correlation])
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss='mse', metrics=[Correlation])
 
     return model
 
@@ -221,18 +226,24 @@ def get_model_Conv1D_Double_LSTM(train_generator, n_assets):
     for i in range(n_assets):
         # Slicing the ith asset:
         a = layers.Lambda(lambda x: x[:, :, i])(x_input)
-        a = layers.Masking(mask_value=0., )(a)
-        y = layers.Conv1D(32, 3, activation='relu', input_shape=input_shape[1:])(x)
+        #a = layers.Masking(mask_value=0., )(a)
+        #a = layers.BatchNormalization()(a)
+        a = layers.Conv1D(32, 3, activation='relu')(a)
+        a = layers.AveragePooling1D(padding='same')(a)
         a = layers.LSTM(units=32, return_sequences=True)(a)
-        a = layers.LSTM(units=16)(a)
         branch_outputs.append(a)
 
     x = layers.Concatenate()(branch_outputs)
     x = layers.Dense(units=128)(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Dropout(0.2)(x)
+    x = layers.Dense(units=128)(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Dropout(0.2)(x)
     out = layers.Dense(units=n_assets)(x)
 
     model = keras.Model(inputs=x_input, outputs=out, name='Conv1D_Double_LSTM')
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss=masked_cosine, metrics=[Correlation])
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss='mse', metrics=[Correlation])
 
     return model
 
@@ -244,7 +255,8 @@ def get_model_Triple_LSTM(train_generator, n_assets):
     for i in range(n_assets):
         # Slicing the ith asset:
         a = layers.Lambda(lambda x: x[:, :, i])(x_input)
-        a = layers.Masking(mask_value=0., )(a)
+        #a = layers.Masking(mask_value=0., )(a)
+        #a = layers.BatchNormalization()(a)
         a = layers.LSTM(units=32, return_sequences=True, dropout=0.2)(a)
         a = layers.LSTM(units=32, return_sequences=True, dropout=0.2)(a)
         a = layers.LSTM(units=32, dropout=0.2)(a)
@@ -256,7 +268,7 @@ def get_model_Triple_LSTM(train_generator, n_assets):
     out = layers.Dense(units=n_assets)(x)
 
     model = keras.Model(inputs=x_input, outputs=out, name='Triple_LSTM')
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss=masked_cosine, metrics=[Correlation])
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss='mse', metrics=[Correlation])
 
     return model
 
@@ -270,7 +282,8 @@ def get_model_TCN(train_generator, n_assets, dilatation=None, nb_filters=16):
 
     for i in range(n_assets):
         a = layers.Lambda(lambda x: x[:, :, i])(x_input)  # Slicing the ith asset:
-        a = layers.Masking(mask_value=0.)(a)
+        #a = layers.Masking(mask_value=0.)(a)
+        #a = layers.BatchNormalization()(a)
         a = TCN(nb_filters=nb_filters, return_sequences=True, dilations=dilatation)(a)
         a = layers.GlobalAvgPool1D()(a)
         branch_outputs.append(a)
@@ -279,7 +292,7 @@ def get_model_TCN(train_generator, n_assets, dilatation=None, nb_filters=16):
     x = layers.Dense(units=128)(x)
     out = layers.Dense(units=n_assets)(x)
     model = keras.Model(inputs=x_input, outputs=out, name='TCN')
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss=masked_mse, metrics=[Correlation])
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss='mse', metrics=[Correlation])
     return model
 
 
