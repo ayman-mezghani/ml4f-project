@@ -23,7 +23,7 @@ def add_features(_df):
     _df['Close/Open'] = _df['Close'] / _df['Open']
     _df['log_Close/Open'] = np.log(_df['Close/Open'])
 
-    _df['mean_trade'] = _df['Volume'] / (_df['Count'] + 1)
+    _df['Mean_trade'] = _df['Volume'] / (_df['Count'] + 1)
     
     _df.ta.macd(close='close', append=True)
 
@@ -33,18 +33,11 @@ def add_features(_df):
 
     _df.ta.dpo(close='close', append=True)
     
-    return _df
-
-
-def add_more_features(_df):
-    # bd = _df.ta.macd(close='close', fast=12, slow=26, signal=9)
-    # _df = pd.concat([_df, bd], axis=1).dropna()
-
     _df['High/Low'] = _df['High'] / _df['Low']
-    _df['log_High/Low'] = np.log(_df['High/Low'])
+    _df['LOG_High/Low'] = np.log(_df['High/Low'])
 
-    _df['LOGVOL'] = np.log(1. + _df['Volume'])
-    _df['LOGCNT'] = np.log(1. + _df['Count'])
+    _df['LOG_VOL'] = np.log(1. + _df['Volume'])
+    _df['LOG_CNT'] = np.log(1. + _df['Count'])
 
     _df['Mean'] = _df[['Open', 'High', 'Low', 'Close']].mean(axis = 1)
     _df['High/Mean'] = _df['High'] / _df['Mean']
@@ -54,30 +47,10 @@ def add_more_features(_df):
     _df['High/Median'] = _df['High'] / _df['Median']
     _df['Low/Median'] = _df['Low'] / _df['Median']
 
-    """################################### ???
-
-        _df['RNG'] = (_df['High'] - _df['Low']) / _df['VWAP']
-        _df['MOV'] = (_df['Close'] - _df['Open']) / _df['VWAP']
-        _df['CLS'] = (_df['Close'] - _df['VWAP']) / _df['VWAP']
-
-    ################################### ???
-
-        _df['gtrade'] = _df['Close-Open'] / _df['Count']
-        _df['shadow1'] = _df['Close-Open'] / (_df['Volume'] + 1)
-        _df['shadow3'] = _df['Upper_Shadow'] / (_df['Volume'] + 1)
-        _df['shadow5'] = _df['Lower_Shadow'] / (_df['Volume'] + 1)
-
-        _df['diff1'] = _df['Volume'] - _df['Count'] # ?????
-
-        _df['mean1'] = (_df['shadow5'] + _df['shadow3']) / 2
-        _df['mean2'] = (_df['shadow1'] + _df['Volume']) / 2
-        _df['mean3'] = (_df['Close-Open'] + _df['gtrade']) / 2
-        _df['mean4'] = (_df['diff1'] + _df['Upper_Shadow']) / 2
-        _df['mean5'] = (_df['diff1'] + _df['Lower_Shadow']) / 2"""
     return _df
 
 
-def process_all_assets(_df, scaler=RobustScaler(), more_feat=False):
+def process_all_assets(_df, scaler=RobustScaler()):
     df = _df.copy()
     # casting to float
     df[['Count', 'Open', 'High', 'Low', 'Close', 'Volume', 'VWAP', 'Target']] = \
@@ -97,8 +70,7 @@ def process_all_assets(_df, scaler=RobustScaler(), more_feat=False):
 
     # add feat
     df = add_features(df)
-    if more_feat == True:
-        df = add_more_features(df)
+
     feature_cols = df.columns.drop(['Asset_ID', 'Target', 'timestamp', 'is_real'])
 
     # scale
