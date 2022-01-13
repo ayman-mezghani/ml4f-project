@@ -66,39 +66,6 @@ def plot_training_history(history):
     return fig
 
 
-"""def prediction_details(predictions, y_test, asset_details, model_name,assets=range(Constants.N_ASSETS)):
-    print('Asset:    Corr. coef.')
-    print('---------------------')
-    perf_df = pd.DataFrame(columns=['Model', 'asset', 'corr',
-                                    'weights'])  # A FUNCTION THAT LOGS MODEL NAME, RMSE AND RMPSE INTO perf_df
-    for i in assets:
-        # drop first 14 values in the y_test, since they are absent in val_generator labels
-        y_true = np.squeeze(y_test[Constants.WINDOW_SIZE - 1:, i])
-        y_pred = np.squeeze(predictions[:, i])
-        real_target_ind = np.argwhere(y_true != 0)
-
-        #??
-        assets_order = pd.read_csv('g-research-crypto-forecasting/supplemental_train.csv').Asset_ID[:14]
-        assets_order = dict((t, i) for i, t in enumerate(assets_order))
-        asset_id = list(assets_order.keys())[i]
-
-        asset_name = asset_details[asset_details.Asset_ID == asset_id]['Asset_Name'].item()
-        print(f"{asset_name}: {np.corrcoef(y_pred[real_target_ind].flatten(), y_true[real_target_ind].flatten())[0, 1]:.4f}")
-        correl = np.corrcoef(y_pred[real_target_ind].flatten(), y_true[real_target_ind].flatten())[0, 1]
-        weights = asset_details[asset_details.Asset_ID == i]['Weight'].item()
-
-        perf_df = perf_df.append([pd.Series([model_name, asset_name, correl, weights], index=perf_df.columns)],
-                                 ignore_index=True)
-
-        plt.plot(y_true, label='Target')
-        plt.plot(y_pred, label='Prediction')
-        plt.xlabel('Time')
-        plt.ylabel('Target')
-        plt.legend()
-        plt.show()
-    return perf_df"""
-
-
 def prediction_details(predictions, y_test, window_size, model_name, asset_details, assets):
     pred_details = []
 
@@ -139,7 +106,7 @@ def get_model_LSTM(train_generator, n_assets):
         #a = layers.Masking(mask_value=0.)(a)
         #a = layers.BatchNormalization()(a)
         a = layers.LSTM(units=32, return_sequences=True)(a)
-        a = layers.GlobalAvgPool1D()(a)
+        #a = layers.GlobalAvgPool1D()(a)
         branch_outputs.append(a)
 
     x = layers.Concatenate()(branch_outputs)
@@ -285,7 +252,7 @@ def get_model_TCN(train_generator, n_assets, dilatation=None, nb_filters=16):
         #a = layers.Masking(mask_value=0.)(a)
         #a = layers.BatchNormalization()(a)
         a = TCN(nb_filters=nb_filters, return_sequences=True, dilations=dilatation)(a)
-        a = layers.GlobalAvgPool1D()(a)
+        #a = layers.GlobalAvgPool1D()(a)
         branch_outputs.append(a)
 
     x = layers.Concatenate()(branch_outputs)
