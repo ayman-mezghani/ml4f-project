@@ -11,40 +11,6 @@ from tensorflow.keras import layers
 def Correlation(y_true, y_pred):
     return tf.math.abs(tfp.stats.correlation(y_pred, y_true, sample_axis=None, event_axis=None))
 
-
-# These are actually wrong, they're using the target to see if it's 0 !!
-
-"""# Correlations for predicted and real
-def MaxCorrelation(y_true, y_pred):
-    #Goal is to maximize correlation between y_pred, y_true. Same as minimizing the negative.
-    mask = tf.math.not_equal(y_true, 0.)
-    y_true_masked = tf.boolean_mask(y_true, mask)
-    y_pred_masked = tf.boolean_mask(y_pred, mask)
-    return -tf.math.abs(tfp.stats.correlation(y_true_masked, y_pred_masked, sample_axis=None, event_axis=None))
-
-
-# Masked losses
-def masked_mse(y_true, y_pred):
-    mask = tf.math.not_equal(y_true, 0.)
-    y_true_masked = tf.boolean_mask(y_true, mask)
-    y_pred_masked = tf.boolean_mask(y_pred, mask)
-    return tf.keras.losses.mean_squared_error(y_true=y_true_masked, y_pred=y_pred_masked)
-
-
-def masked_mae(y_true, y_pred):
-    mask = tf.math.not_equal(y_true, 0.)
-    y_true_masked = tf.boolean_mask(y_true, mask)
-    y_pred_masked = tf.boolean_mask(y_pred, mask)
-    return tf.keras.losses.mean_absolute_error(y_true=y_true_masked, y_pred=y_pred_masked)
-
-
-def masked_cosine(y_true, y_pred):
-    mask = tf.math.not_equal(y_true, 0.)
-    y_true_masked = tf.boolean_mask(y_true, mask)
-    y_pred_masked = tf.boolean_mask(y_pred, mask)
-    return tf.keras.losses.cosine_similarity(y_true_masked, y_pred_masked)
-"""
-
 def plot_training_history(history):
     fig, ax = plt.subplots(1, 2, figsize=(16, 8))
     histories = pd.DataFrame(history.history)
