@@ -14,6 +14,12 @@ def c_time_sub(asset_id, data):
 
 
 def add_features(_df):
+    _df['Log_close_diff'] = np.log(_df['Close']).diff()
+    _df['Log_open_diff'] = np.log(_df['Open']).diff()
+    _df['Log_high_diff'] = np.log(_df['High']).diff()
+    _df['Log_low_diff'] = np.log(_df['Low']).diff()
+    _df['Log_vwap_diff'] = np.log(_df['VWAP']).diff()
+    
     _df['Spread'] = _df['High'] - _df['Low']
     _df['Close_Open'] = _df['Close'] - _df['Open']
 
