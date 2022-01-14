@@ -18,4 +18,5 @@ dependencies:
     - keras-tcn
     - plotly
     - pandas_ta
+    - pmdarima
  
