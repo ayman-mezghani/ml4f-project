@@ -13,7 +13,8 @@ def c_time_sub(asset_id, data):
     return df
 
 
-def add_features(_df):
+def add_features(df):
+    _df = df.copy()
     _df['Log_close_diff'] = np.log(_df['Close']).diff()
     _df['Log_open_diff'] = np.log(_df['Open']).diff()
     _df['Log_high_diff'] = np.log(_df['High']).diff()
@@ -74,18 +75,16 @@ def process_all_assets(_df, scaler=RobustScaler()):
     df.sort_index(inplace=True)
     df['is_real'] = True
 
-    # add feat
-    df = add_features(df)
-
-    feature_cols = df.columns.drop(['Asset_ID', 'Target', 'timestamp', 'is_real'])
-
-    # scale
-    df[feature_cols] = scaler.fit_transform(df[feature_cols])
-
-    # reindexing, frequency is minutes
+    
     ind = df.index.unique()
     def reindex(df):
-        res = df.reindex(pd.date_range(ind.min(), ind.max(), freq='min'))
+        # add feat
+        res = add_features(df)
+        feature_cols = res.columns.drop(['Asset_ID', 'Target', 'timestamp', 'is_real'])
+        # scale
+        res[feature_cols] = scaler.fit_transform(res[feature_cols])
+        # reindexing, frequency is minutes
+        res = res.reindex(pd.date_range(ind.min(), ind.max(), freq='min'))
         res['is_real'].fillna(False, inplace=True)
         res['timestamp'] = res.index
         res = res.fillna(method="ffill").fillna(method="bfill")

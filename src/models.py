@@ -92,6 +92,7 @@ def prediction_details(predictions, y_test, window_size, model_name, asset_detai
         plt.ylabel('Target')
         plt.title(asset_name)
         plt.legend()
+        plt.show()
 
     return pd.DataFrame(pred_details, columns=['Model_name', 'Asset_name', 'Correlation', 'Asset_weight'])
 
